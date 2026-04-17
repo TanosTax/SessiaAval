@@ -507,9 +507,11 @@ public partial class UserDashboardWindow : Window
         dialog.ShowDialog(this);
     }
     
+    private StackPanel? currentServicesPanel;
+    
     private void onServicesClick(object? sender, RoutedEventArgs e)
     {
-        var view = new StackPanel { Margin = new Avalonia.Thickness(30) };
+        var mainPanel = new StackPanel { Margin = new Avalonia.Thickness(30) };
         
         var title = new TextBlock 
         { 
@@ -517,63 +519,254 @@ public partial class UserDashboardWindow : Window
             FontSize = 28, 
             FontWeight = FontWeight.Bold,
             Foreground = new SolidColorBrush(Color.Parse("#2C2C2C")),
-            Margin = new Avalonia.Thickness(0, 0, 0, 30)
+            Margin = new Avalonia.Thickness(0, 0, 0, 20)
         };
-        view.Children.Add(title);
+        mainPanel.Children.Add(title);
+        
+        // Панель фильтров (кнопки коллекций)
+        var filterPanel = new StackPanel 
+        { 
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            Margin = new Avalonia.Thickness(0, 0, 0, 20)
+        };
+        
+        // Кнопка "Все"
+        var allButton = new Button 
+        { 
+            Content = "Все",
+            Width = 100,
+            Height = 35,
+            FontSize = 13
+        };
+        allButton.Classes.Add("secondary");
+        allButton.Click += (s, args) => filterServicesByCollection(null);
+        filterPanel.Children.Add(allButton);
+        
+        // Загружаем коллекции из БД
+        var collections = dbContext.Set<Collection>().ToList();
+        foreach (var collection in collections)
+        {
+            var collectionButton = new Button 
+            { 
+                Content = collection.collectionName,
+                Width = 120,
+                Height = 35,
+                FontSize = 13,
+                Tag = collection.collectionId
+            };
+            collectionButton.Classes.Add("secondary");
+            collectionButton.Click += (s, args) => 
+            {
+                if (s is Button btn && btn.Tag is int collId)
+                    filterServicesByCollection(collId);
+            };
+            filterPanel.Children.Add(collectionButton);
+        }
+        
+        mainPanel.Children.Add(filterPanel);
+        
+        // ScrollViewer для списка услуг
+        var scrollViewer = new ScrollViewer 
+        { 
+            Height = 480,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+        };
+        
+        currentServicesPanel = new StackPanel 
+        { 
+            Spacing = 15
+        };
         
         loadServices();
         
-        var servicesGrid = new DataGrid
+        // Создаем горизонтальные карточки
+        foreach (var service in availableServices)
         {
-            ItemsSource = availableServices,
-            AutoGenerateColumns = false,
-            IsReadOnly = true,
-            GridLinesVisibility = DataGridGridLinesVisibility.All,
+            var card = createHorizontalServiceCard(service);
+            currentServicesPanel.Children.Add(card);
+        }
+        
+        scrollViewer.Content = currentServicesPanel;
+        mainPanel.Children.Add(scrollViewer);
+        
+        contentArea.Content = mainPanel;
+    }
+    
+    private void filterServicesByCollection(int? collectionId)
+    {
+        if (currentServicesPanel == null)
+            return;
+            
+        availableServices.Clear();
+        
+        var query = dbContext.services
+            .Include(s => s.category)
+            .AsQueryable();
+        
+        if (collectionId.HasValue)
+        {
+            query = query.Where(s => s.collectionId == collectionId.Value);
+        }
+        
+        var services = query.OrderBy(s => s.serviceName).ToList();
+        
+        foreach (var service in services)
+        {
+            availableServices.Add(service);
+        }
+        
+        // Обновляем только панель с карточками
+        currentServicesPanel.Children.Clear();
+        foreach (var service in availableServices)
+        {
+            var card = createHorizontalServiceCard(service);
+            currentServicesPanel.Children.Add(card);
+        }
+    }
+    
+    private Border createHorizontalServiceCard(Service service)
+    {
+        var card = new Border
+        {
             Background = Brushes.White,
-            Foreground = Brushes.Black,
-            MaxHeight = 500
+            BorderBrush = new SolidColorBrush(Color.Parse("#E0E0E0")),
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Padding = new Avalonia.Thickness(0),
+            Height = 150,
+            BoxShadow = new BoxShadows(new BoxShadow 
+            { 
+                OffsetX = 0, 
+                OffsetY = 2, 
+                Blur = 4, 
+                Color = Color.Parse("#30000000") 
+            })
         };
         
-        servicesGrid.Columns.Add(new DataGridTextColumn 
-        { 
-            Header = "Услуга", 
-            Binding = new Avalonia.Data.Binding("serviceName"),
-            Width = new DataGridLength(250)
-        });
-        servicesGrid.Columns.Add(new DataGridTextColumn 
-        { 
-            Header = "Категория", 
-            Binding = new Avalonia.Data.Binding("category.categoryName"),
-            Width = new DataGridLength(200)
-        });
-        servicesGrid.Columns.Add(new DataGridTextColumn 
-        { 
-            Header = "Цена", 
-            Binding = new Avalonia.Data.Binding("price") { StringFormat = "{0:N2} ₽" },
-            Width = new DataGridLength(100)
-        });
-        servicesGrid.Columns.Add(new DataGridTextColumn 
-        { 
-            Header = "Длительность", 
-            Binding = new Avalonia.Data.Binding("durationMinutes") { StringFormat = "{0} мин" },
-            Width = new DataGridLength(120)
-        });
+        var horizontalPanel = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("200,*")
+        };
         
-        view.Children.Add(servicesGrid);
+        // Левая часть - фото
+        Border imageContainer;
+        try
+        {
+            var image = new Image
+            {
+                Width = 200,
+                Height = 150,
+                Stretch = Avalonia.Media.Stretch.UniformToFill,
+                Source = service.imageSource
+            };
+            imageContainer = new Border
+            {
+                Width = 200,
+                Height = 150,
+                Child = image,
+                ClipToBounds = true
+            };
+        }
+        catch
+        {
+            imageContainer = new Border
+            {
+                Width = 200,
+                Height = 150,
+                Background = new SolidColorBrush(Color.Parse("#F5F5F5")),
+                Child = new TextBlock
+                {
+                    Text = "Нет фото",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = new SolidColorBrush(Color.Parse("#999999"))
+                }
+            };
+        }
         
-        var button = new Button 
+        Grid.SetColumn(imageContainer, 0);
+        horizontalPanel.Children.Add(imageContainer);
+        
+        // Правая часть - информация
+        var infoPanel = new StackPanel 
         { 
-            Content = "Записаться на услугу", 
-            Width = 200,
-            Height = 40,
+            Margin = new Avalonia.Thickness(20, 15, 20, 15),
+            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        
+        // Название услуги
+        var serviceName = new TextBlock
+        {
+            Text = service.serviceName,
+            FontSize = 18,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#2C2C2C")),
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        };
+        infoPanel.Children.Add(serviceName);
+        
+        // Описание (если есть)
+        if (!string.IsNullOrEmpty(service.description))
+        {
+            var description = new TextBlock
+            {
+                Text = service.description.Length > 100 
+                    ? service.description.Substring(0, 100) + "..." 
+                    : service.description,
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Color.Parse("#666666")),
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                MaxHeight = 35
+            };
+            infoPanel.Children.Add(description);
+        }
+        
+        // Панель с ценой и длительностью
+        var detailsPanel = new StackPanel 
+        { 
+            Orientation = Orientation.Horizontal,
+            Spacing = 20
+        };
+        
+        var price = new TextBlock
+        {
+            Text = $"Цена: {service.price:N0} руб.",
             FontSize = 14,
-            Margin = new Avalonia.Thickness(0, 20, 0, 0)
+            FontWeight = FontWeight.SemiBold,
+            Foreground = new SolidColorBrush(Color.Parse("#4CAF50"))
         };
-        button.Classes.Add("primary");
-        button.Click += onBookServiceClick;
-        view.Children.Add(button);
+        detailsPanel.Children.Add(price);
         
-        contentArea.Content = view;
+        var duration = new TextBlock
+        {
+            Text = $"Обновлено: {service.lastModified:dd.MM.yyyy}",
+            FontSize = 12,
+            Foreground = new SolidColorBrush(Color.Parse("#999999"))
+        };
+        detailsPanel.Children.Add(duration);
+        
+        infoPanel.Children.Add(detailsPanel);
+        
+        // Кнопка "Записаться"
+        var bookButton = new Button
+        {
+            Content = "Записаться",
+            Width = 150,
+            Height = 35,
+            FontSize = 13,
+            Margin = new Avalonia.Thickness(0, 5, 0, 0)
+        };
+        bookButton.Classes.Add("primary");
+        bookButton.Click += (s, e) => onBookServiceClick(s, e);
+        infoPanel.Children.Add(bookButton);
+        
+        Grid.SetColumn(infoPanel, 1);
+        horizontalPanel.Children.Add(infoPanel);
+        
+        card.Child = horizontalPanel;
+        return card;
     }
     
     private void loadServices()
