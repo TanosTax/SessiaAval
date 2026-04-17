@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SessiaAval.Views.User.UserDashboardWindow"
+        Title="Матье - Личный кабинет"
+        Width="1200" Height="700"
+        WindowStartupLocation="CenterScreen"
+        Icon="avares://SessiaAval/Assets/Logo.ico"
+        Background="#F8F8F8">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Боковая панель -->
+        <Border Grid.Column="0" Background="#2C2C2C" BorderBrush="#1A1A1A" BorderThickness="0,0,1,0">
+            <StackPanel Margin="15">
+                <Border Width="180" Height="180" Background="#1A1A1A" CornerRadius="90" Margin="0,20,0,30" ClipToBounds="True">
+                    <Image Source="avares://SessiaAval/Assets/Logo.png" Stretch="UniformToFill"/>
+                </Border>
+                
+                <TextBlock x:Name="userNameText" Text="Пользователь" FontSize="16" FontWeight="Bold" 
+                           Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                
+                <Button Content="МОЙ БАЛАНС" Margin="0,10" Classes="sidebar" Click="onBalanceClick"/>
+                <Button Content="МОИ ЗАПИСИ" Margin="0,10" Classes="sidebar" Click="onAppointmentsClick"/>
+                <Button Content="УСЛУГИ" Margin="0,10" Classes="sidebar" Click="onServicesClick"/>
+                <Button Content="ОТЗЫВЫ" Margin="0,10" Classes="sidebar" Click="onReviewsClick"/>
+                <Button Content="РАЗЛОГИНИТЬСЯ" Margin="0,10" Classes="sidebar" Click="onLogoutClick"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Основной контент -->
+        <Grid Grid.Column="1">
+            <ContentControl x:Name="contentArea"/>
+        </Grid>
+    </Grid>
+</Window>

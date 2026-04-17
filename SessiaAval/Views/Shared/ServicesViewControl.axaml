@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SessiaAval.Views.Shared.ServicesViewControl">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock Grid.Row="0" Text="КАТАЛОГ УСЛУГ" FontSize="24" FontWeight="Bold" 
+                   Margin="0,0,0,20"/>
+
+        <!-- Фильтры и кнопки -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15" Spacing="10">
+            <Button x:Name="addButton" Content="Добавить услугу" Classes="primary" Click="onAddClick"/>
+            <Button Content="Сортировать" Classes="secondary" Click="onSortClick"/>
+            <Button Content="Кастом" Classes="outline" Click="onCategoryClick" Tag="Кастом"/>
+            <Button Content="Косплей" Classes="outline" Click="onCategoryClick" Tag="Косплей"/>
+        </StackPanel>
+
+        <!-- Список услуг -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="servicesItemsControl" ItemsSource="{Binding services}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="card" Margin="0,0,0,15">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Width="120" Height="120" Background="#F0F0F0" 
+                                        BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                                    <Image Source="{Binding imageSource}" Stretch="UniformToFill"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding serviceName}" FontSize="18" FontWeight="Bold" 
+                                               Foreground="#2C2C2C" Margin="0,0,0,8"/>
+                                    <TextBlock Text="{Binding description}" FontSize="13" Foreground="#666666" 
+                                               TextWrapping="Wrap" Margin="0,0,0,8" MaxWidth="500"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                        <TextBlock Text="Цена: " FontSize="13" Foreground="#666666"/>
+                                        <TextBlock Text="{Binding price, StringFormat='{}{0:N0} ₽'}" 
+                                                   FontSize="13" FontWeight="Bold" Foreground="#2C2C2C"/>
+                                        <TextBlock Text=" • " FontSize="13" Foreground="#CCCCCC" Margin="8,0"/>
+                                        <TextBlock Text="{Binding durationMinutes, StringFormat='{}{0} мин'}" 
+                                                   FontSize="13" Foreground="#666666"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel x:Name="actionButtons" Grid.Column="2" VerticalAlignment="Center" Spacing="8">
+                                    <Button Content="Редактировать" Classes="edit" Click="onEditClick"/>
+                                    <Button Content="Удалить" Classes="danger" Click="onDeleteClick"/>
+                                    <Button Content="Записаться" Classes="primary" Click="onBookClick"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Пагинация -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,15,0,0">
+            <Button x:Name="previousButton" Click="onPreviousClick" Classes="nav">
+                <TextBlock Text="◄" FontSize="14"/>
+            </Button>
+            <TextBlock x:Name="pageInfoText" Text="1-3 из 10" VerticalAlignment="Center"/>
+            <Button x:Name="nextButton" Click="onNextClick" Classes="nav">
+                <TextBlock Text="►" FontSize="14"/>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

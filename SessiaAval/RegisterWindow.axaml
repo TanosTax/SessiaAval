@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SessiaAval.RegisterWindow"
+        Title="Регистрация"
+        Width="450" Height="600"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Background="#F8F8F8">
+
+    <Grid>
+        <Border Background="White" CornerRadius="12" Margin="30" Padding="40"
+                BoxShadow="0 4 20 0 #15000000">
+            <StackPanel Spacing="15">
+                <TextBlock Text="РЕГИСТРАЦИЯ" FontSize="24" FontWeight="Bold" 
+                           HorizontalAlignment="Center" Foreground="#2C2C2C" Margin="0,0,0,10"/>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Имя" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="firstNameTextBox" Watermark="Иван"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Фамилия" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="lastNameTextBox" Watermark="Иванов"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Email" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="emailTextBox" Watermark="example@mail.ru"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Телефон (необязательно)" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="phoneTextBox" Watermark="+7 (900) 123-45-67"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Пароль" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="passwordTextBox" PasswordChar="●" Watermark="Минимум 6 символов"/>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Подтверждение пароля" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+                    <TextBox x:Name="confirmPasswordTextBox" PasswordChar="●" Watermark="Повторите пароль"/>
+                </StackPanel>
+
+                <TextBlock x:Name="errorTextBlock" Text="" Foreground="#D32F2F" 
+                           FontSize="12" TextWrapping="Wrap" IsVisible="False"/>
+
+                <Button Content="Зарегистрироваться" Classes="primary" Click="onRegisterClick"
+                        HorizontalAlignment="Stretch" Margin="0,10,0,0"/>
+
+                <Button Content="Отмена" Classes="secondary" Click="onCancelClick"
+                        HorizontalAlignment="Stretch"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

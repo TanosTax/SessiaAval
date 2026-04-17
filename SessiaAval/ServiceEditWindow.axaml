@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SessiaAval.ServiceEditWindow"
+        Title="Редактирование услуги"
+        Width="500" Height="550"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Background="#F8F8F8">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Название услуги" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <TextBox Grid.Row="0" x:Name="nameTextBox" Margin="0,25,0,10"/>
+
+        <TextBlock Grid.Row="1" Text="Описание" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <TextBox Grid.Row="1" x:Name="descriptionTextBox" Height="80" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,25,0,10"/>
+
+        <TextBlock Grid.Row="2" Text="Цена (₽)" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <TextBox Grid.Row="2" x:Name="priceTextBox" Margin="0,25,0,10"/>
+
+        <TextBlock Grid.Row="3" Text="Длительность (минуты)" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <TextBox Grid.Row="3" x:Name="durationTextBox" Margin="0,25,0,10"/>
+
+        <TextBlock Grid.Row="4" Text="Категория" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <ComboBox Grid.Row="4" x:Name="categoryComboBox" Margin="0,25,0,10">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding categoryName}"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Grid.Row="5" Text="Коллекция" Margin="0,0,0,5" Foreground="#2C2C2C" FontWeight="SemiBold"/>
+        <ComboBox Grid.Row="5" x:Name="collectionComboBox" Margin="0,25,0,10">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding collectionName}"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+            <Button Content="Сохранить" Click="onSaveClick" Classes="primary"/>
+            <Button Content="Отмена" Click="onCancelClick" Classes="secondary"/>
+        </StackPanel>
+    </Grid>
+</Window>
