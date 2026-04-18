@@ -307,7 +307,7 @@ SELECT
     (SELECT service_id FROM services WHERE service_name = 'Костюм детектива'),
     (SELECT master_id FROM masters WHERE user_id = (SELECT user_id FROM users WHERE email = 'master3@matye.ru')),
     5, 'Отлично доработали мой старый костюм!'
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING; 
 
 INSERT INTO reviews (user_id, service_id, master_id, rating, comment) 
 SELECT 

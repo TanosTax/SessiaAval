@@ -5,6 +5,8 @@ using Avalonia.Media;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Globalization;
+using Avalonia.Data.Converters;
 using Microsoft.EntityFrameworkCore;
 using SessiaAval.Data;
 using SessiaAval.Models;
@@ -12,6 +14,23 @@ using UserModel = SessiaAval.Models.User;
 using MasterModel = SessiaAval.Models.Master;
 
 namespace SessiaAval.Views.User;
+
+public class CardNumberConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is string cardDigits && !string.IsNullOrEmpty(cardDigits))
+        {
+            return $"**** **** **** {cardDigits}";
+        }
+        return "-";
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
 
 public partial class UserDashboardWindow : Window
 {
@@ -21,6 +40,12 @@ public partial class UserDashboardWindow : Window
     private ObservableCollection<Service> availableServices;
     private ObservableCollection<Review> myReviews;
     private ObservableCollection<BalanceTransaction> transactions;
+    
+    // Пагинация и сортировка для услуг
+    private int currentPage = 1;
+    private const int pageSize = 5;
+    private bool isSortedAlphabetically = false;
+    private int? currentCollectionFilter = null;
 
     public UserDashboardWindow(UserModel user)
     {
@@ -123,6 +148,7 @@ public partial class UserDashboardWindow : Window
             Text = "История операций:", 
             FontSize = 18,
             FontWeight = FontWeight.Bold,
+            Foreground = Brushes.Black,
             Margin = new Avalonia.Thickness(0, 30, 0, 15)
         });
         
@@ -160,8 +186,11 @@ public partial class UserDashboardWindow : Window
         transactionsGrid.Columns.Add(new DataGridTextColumn 
         { 
             Header = "Карта", 
-            Binding = new Avalonia.Data.Binding("cardLastDigits"),
-            Width = new DataGridLength(100)
+            Binding = new Avalonia.Data.Binding("cardLastDigits") 
+            { 
+                Converter = new CardNumberConverter() 
+            },
+            Width = new DataGridLength(150)
         });
         
         balanceView.Children.Add(transactionsGrid);
@@ -508,9 +537,14 @@ public partial class UserDashboardWindow : Window
     }
     
     private StackPanel? currentServicesPanel;
+    private TextBlock? pageInfoText;
     
     private void onServicesClick(object? sender, RoutedEventArgs e)
     {
+        currentPage = 1;
+        isSortedAlphabetically = false;
+        currentCollectionFilter = null;
+        
         var mainPanel = new StackPanel { Margin = new Avalonia.Thickness(30) };
         
         var title = new TextBlock 
@@ -523,7 +557,7 @@ public partial class UserDashboardWindow : Window
         };
         mainPanel.Children.Add(title);
         
-        // Панель фильтров (кнопки коллекций)
+        // Панель фильтров и сортировки
         var filterPanel = new StackPanel 
         { 
             Orientation = Orientation.Horizontal,
@@ -564,36 +598,117 @@ public partial class UserDashboardWindow : Window
             filterPanel.Children.Add(collectionButton);
         }
         
+        // Кнопка сортировки по алфавиту
+        var sortButton = new Button 
+        { 
+            Content = "Сортировка А-Я",
+            Width = 160,
+            Height = 35,
+            FontSize = 13,
+            Margin = new Avalonia.Thickness(20, 0, 0, 0)
+        };
+        sortButton.Classes.Add("primary");
+        sortButton.Click += (s, args) => 
+        {
+            isSortedAlphabetically = !isSortedAlphabetically;
+            sortButton.Content = isSortedAlphabetically ? "Сортировка Я-А" : "Сортировка А-Я";
+            currentPage = 1;
+            refreshServicesView();
+        };
+        filterPanel.Children.Add(sortButton);
+        
         mainPanel.Children.Add(filterPanel);
         
         // ScrollViewer для списка услуг
         var scrollViewer = new ScrollViewer 
         { 
-            Height = 480,
+            Height = 400,
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
         };
         
         currentServicesPanel = new StackPanel 
         { 
-            Spacing = 15
+            Spacing = 15,
+            VerticalAlignment = VerticalAlignment.Center
         };
-        
-        loadServices();
-        
-        // Создаем горизонтальные карточки
-        foreach (var service in availableServices)
-        {
-            var card = createHorizontalServiceCard(service);
-            currentServicesPanel.Children.Add(card);
-        }
         
         scrollViewer.Content = currentServicesPanel;
         mainPanel.Children.Add(scrollViewer);
         
+        // Панель пагинации
+        var paginationPanel = new StackPanel 
+        { 
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Spacing = 10,
+            Margin = new Avalonia.Thickness(0, 20, 0, 0)
+        };
+        
+        var prevButton = new Button 
+        { 
+            Content = "← Назад",
+            Width = 100,
+            Height = 35
+        };
+        prevButton.Classes.Add("secondary");
+        prevButton.Click += (s, args) => 
+        {
+            if (currentPage > 1)
+            {
+                currentPage--;
+                refreshServicesView();
+            }
+        };
+        paginationPanel.Children.Add(prevButton);
+        
+        pageInfoText = new TextBlock 
+        { 
+            Text = "Страница 1",
+            FontSize = 14,
+            Foreground = Brushes.Black,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Avalonia.Thickness(10, 0, 10, 0)
+        };
+        paginationPanel.Children.Add(pageInfoText);
+        
+        var nextButton = new Button 
+        { 
+            Content = "Вперед →",
+            Width = 100,
+            Height = 35
+        };
+        nextButton.Classes.Add("secondary");
+        nextButton.Click += (s, args) => 
+        {
+            var totalServices = getTotalServicesCount();
+            var totalPages = (int)Math.Ceiling((double)totalServices / pageSize);
+            if (currentPage < totalPages)
+            {
+                currentPage++;
+                refreshServicesView();
+            }
+        };
+        paginationPanel.Children.Add(nextButton);
+        
+        mainPanel.Children.Add(paginationPanel);
+        
         contentArea.Content = mainPanel;
+        refreshServicesView();
     }
     
-    private void filterServicesByCollection(int? collectionId)
+    private int getTotalServicesCount()
+    {
+        var query = dbContext.services.AsQueryable();
+        
+        if (currentCollectionFilter.HasValue)
+        {
+            query = query.Where(s => s.collectionId == currentCollectionFilter.Value);
+        }
+        
+        return query.Count();
+    }
+    
+    private void refreshServicesView()
     {
         if (currentServicesPanel == null)
             return;
@@ -604,25 +719,54 @@ public partial class UserDashboardWindow : Window
             .Include(s => s.category)
             .AsQueryable();
         
-        if (collectionId.HasValue)
+        if (currentCollectionFilter.HasValue)
         {
-            query = query.Where(s => s.collectionId == collectionId.Value);
+            query = query.Where(s => s.collectionId == currentCollectionFilter.Value);
         }
         
-        var services = query.OrderBy(s => s.serviceName).ToList();
+        // Сортировка
+        if (isSortedAlphabetically)
+        {
+            query = query.OrderBy(s => s.serviceName);
+        }
+        else
+        {
+            query = query.OrderByDescending(s => s.serviceName);
+        }
+        
+        // Пагинация
+        var services = query
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
         
         foreach (var service in services)
         {
             availableServices.Add(service);
         }
         
-        // Обновляем только панель с карточками
+        // Обновляем панель с карточками
         currentServicesPanel.Children.Clear();
         foreach (var service in availableServices)
         {
             var card = createHorizontalServiceCard(service);
             currentServicesPanel.Children.Add(card);
         }
+        
+        // Обновляем информацию о странице
+        if (pageInfoText != null)
+        {
+            var totalServices = getTotalServicesCount();
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalServices / pageSize));
+            pageInfoText.Text = $"Страница {currentPage} из {totalPages}";
+        }
+    }
+    
+    private void filterServicesByCollection(int? collectionId)
+    {
+        currentCollectionFilter = collectionId;
+        currentPage = 1;
+        refreshServicesView();
     }
     
     private Border createHorizontalServiceCard(Service service)
@@ -741,7 +885,7 @@ public partial class UserDashboardWindow : Window
         
         var duration = new TextBlock
         {
-            Text = $"Обновлено: {service.lastModified:dd.MM.yyyy}",
+            Text = $"Обновлено: {service.lastModified:dd.MM.yyyy HH:mm}",
             FontSize = 12,
             Foreground = new SolidColorBrush(Color.Parse("#999999"))
         };
